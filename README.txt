@@ -1,4 +1,4 @@
-=== <h2>h5p-standalone</h2> ===
+=== h5p-standalone ===
 Contributors: anuragkhanra
 Donate link: anurag
 Tags: comments, spam
