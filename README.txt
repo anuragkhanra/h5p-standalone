@@ -1,4 +1,4 @@
-=== Plugin Name ===
+=== <h2>h5p-standalone</h2> ===
 Contributors: anuragkhanra
 Donate link: anurag
 Tags: comments, spam
