@@ -14,20 +14,18 @@ A wordpress plugin to automate the task of running h5p content in static website
 
 This is the long description.  No limit, and you can use Markdown (as well as in the following sections).
 
-For backwards compatibility, if this section is missing, the full length of the short description will be used, and
-Markdown parsed.
 
 == Installation ==
 
-This section describes how to install the plugin and get it working.
-
-e.g.
-
-1. Upload `wp-stand.php` to the `/wp-content/plugins/` directory
-1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Place `<?php do_action('plugin_name_hook'); ?>` in your templates
+1. Upload the plugin zip
+2. Activate the plugin
+3. Go to Settings-> h5p-StandAlone
+4. In the Initial run click 'Set Up' once to set up tables
+5. Refresh the page
 
 == Changelog ==
 
 = 1.0 =
 * Initial release
+= 1.1 =
+* Lots of enhancements

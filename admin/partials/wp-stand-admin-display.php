@@ -24,10 +24,47 @@ if(isset($_POST['map_submit'])){
     $query = "INSERT INTO `c_map` (`wp_cont_id`,`crs_id`,`chp_id`,`map_date`) VALUES ('$id','$course','$chapter','$cdate')";
     mysqli_query($con,$query);
 }
+// Setup form
+if(isset($_POST['setup'])){
+    $sql = "CREATE TABLE `course` (
+        `crs_id` int(11) NOT NULL,
+        `crs_name` varchar(255) NOT NULL,
+        `crs_date` text NOT NULL,
+        `crs_user` varchar(255) NOT NULL,
+        `crs_update` text NOT NULL,
+        `crs_delete` tinyint(4) NOT NULL
+      );";
+    $sql .= "ALTER TABLE `course` ADD PRIMARY KEY (`crs_id`);";
+    $sql .= "ALTER TABLE `course` MODIFY `crs_id` int(11) NOT NULL AUTO_INCREMENT;";
+    $sql .= "CREATE TABLE `chapter` (
+        `chp_id` int(11) NOT NULL,
+        `crs_id` int(11) NOT NULL,
+        `chp_name` varchar(255) NOT NULL,
+        `chp_date` text NOT NULL,
+        `chp_user` varchar(255) NOT NULL,
+        `chp_update` text NOT NULL,
+        `chp_delete` tinyint(4) NOT NULL
+      );";
+    $sql .= "ALTER TABLE `chapter` ADD PRIMARY KEY (`chp_id`);";
+    $sql .= "ALTER TABLE `chapter` MODIFY `chp_id` int(11) NOT NULL AUTO_INCREMENT;";
+    $sql .= "CREATE TABLE `c_map` (
+        `wp_cont_id` int(11) NOT NULL,
+        `crs_id` int(11) NOT NULL,
+        `chp_id` int(11) NOT NULL,
+        `map_date` text NOT NULL
+      );";
+    $con->multi_query($sql);
+}
+if(!mysqli_query($con,"SELECT * FROM `course`")){
 ?>
-<!DOCTYPE html>
+    <form align="center" action="" method="POST">
+        <button id="but" name="setup" type="submit">Set Up</button>
+    </form>
+<?php } ?>
 <html>
     <body>
+
+    
     <div id="myModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -65,6 +102,7 @@ if(isset($_POST['map_submit'])){
         //echo $current_user->user_login;
         
         // Chapter and Course Creation
+        
             if(isset($_POST['submit_course'])){
                 $course = stripslashes($_REQUEST['course']);
                 $course = mysqli_real_escape_string($con,$course);
