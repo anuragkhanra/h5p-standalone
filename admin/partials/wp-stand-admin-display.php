@@ -63,37 +63,64 @@ if(!mysqli_query($con,"SELECT * FROM `course`")){
 <?php } ?>
 <html>
     <body>
-
-    
+        <?php
+        if(isset($_POST['submit_map'])){
+            $wp_cont_id = $_POST['wp_id'];
+            $crs_id = $_POST['crs_id'];
+            $chp_id = $_POST['chp_id'];
+            $cdate = date("d.m.Y");
+            mysqli_query($con,"INSERT INTO `c_map`(`wp_cont_id`, `crs_id`, `chp_id`, `map_date`) VALUES
+            ('$wp_cont_id','$crs_id','$chp_id','$cdate')");
+        }
+        ?>
     <div id="myModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <form method="POST" action="">
-                <input type="hidden" name="id" id="input1">
-                Select Course: 
-                <select name="s_course" required>
-                    <option value="">__SELECT__</option>
-            <?php
+            Select Course:
+            <select id="course" required>
+                <option value="" selected="selected" autocomplete="off">__SELECT__</option>
+                <?php
             $result2 = mysqli_query($con,"SELECT * FROM `course`");
             while($row2 = mysqli_fetch_assoc($result2)){
                 echo '<option value="'.$row2['crs_id'].'">'.$row2['crs_name'].'</option>';
             }
             ?>
-                </select><br>
-                Select Chapter:
-                <select name="s_chap" required>
-                    <option value="">__SELECT__</option>
-            <?php
-            $result3 = mysqli_query($con,"SELECT * FROM `chapter`");
-            while($row3 = mysqli_fetch_assoc($result3)){
-                echo '<option value="'.$row3['chp_id'].'">'.$row3['chp_name'].'</option>';
-            }
-            ?>
-                </select><br>
-                <input type="submit" name="map_submit" value="Process Map">
+            </select><br>
+            <form action="" method="POST">
+            Select Chapter:
+            <select name="chp_id" id="chapter" required>
+                <option value="">__SELECT__</option>
+            </select>
+            <input type="hidden" name="wp_id" id="input1">
+            <input type="hidden" name="crs_id" id="tex"><br>
+            <input id="but1" type="submit" value="Process Map" name="submit_map">
             </form>
         </div>
     </div>
+
+    <script>
+    document.getElementById("course").onchange = function() {showHint()};
+    function showHint() {
+        str = document.getElementById("course").value;
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("chapter").options.length = 0;
+                var myArr = JSON.parse(this.responseText);
+                for(var i = 0; i<myArr.length-1; i+=2){
+                    var option = document.createElement("option");
+                    option.text = myArr[i+1];
+                    option.value = myArr[i];
+                    var select = document.getElementById("chapter");
+                    select.appendChild(option);
+                }
+                document.getElementById("tex").value = myArr[myArr.length-1];
+            }
+        };
+        xmlhttp.open("GET", "http://"+window.location.hostname+"/wordpress/wp-content/plugins/wp-stand/admin/partials/ajax.php?q=" + str, true);
+        xmlhttp.send();
+}
+    </script>
 
     <div id="di">
         <?php
@@ -174,7 +201,7 @@ require 'ex.php';
         //unzip the h5p package
         $zip = new ZipArchive;
         if ($zip->open($root_dir.'h5p/workspace/my.h5p') === TRUE) {
-            $zip->extractTo($root_dir.'h5p/workspace/'.$slug);
+            $zip->extractTo($root_dir.'h5p/workspace/'.$id.'-'.$slug);
             $zip->close();
             echo '  Successfully unzipped';
         } else {
@@ -185,14 +212,54 @@ require 'ex.php';
         unlink($root_dir.'h5p/workspace/my.h5p');
         
         //create html file
-        $rename = $root_dir."h5p/demo/".$slug.".html";
+        $rename = $root_dir."h5p/demo/".$id.'-'.$slug.".html";
         $url1 = $root_dir.'h5p/demo/index.html';
         file_put_contents( $slug,file_get_contents($url1));
         rename($slug,$rename);
 
         $marker = "workspace";
-        injectData($rename,'/'.$slug,465);
-            echo '<br><h2>http://'.$host.'/wordpress/wp-content/plugins/wp-stand/admin/partials/h5p/demo/'.$slug.'.html</h2>';
+        injectData($rename,'/'.$id.'-'.$slug,465);
+            echo '<br><h2>http://'.$host.'/wordpress/wp-content/plugins/wp-stand/admin/partials/h5p/demo/'.$id.'-'.$slug.'.html</h2>';
+        
+        // copy the html file to workspace
+        copy($root_dir."h5p/demo/".$id.'-'.$slug.".html",$root_dir."h5p/workspace/".$id.'-'.$slug."/index.html",);
+
+        // Create the zip for export
+        $dir = $root_dir."h5p/workspace/".$id."-".$slug."/";
+        $zip = "my.zip";
+        $fpath = $path.$zip;
+        
+
+        // Get real path for our folder
+$rootPath = realpath($dir);
+
+// Initialize archive object
+$zip = new ZipArchive();
+$zip->open($root_dir."h5p/workspace/".$id."-".$slug."/".$id."-".$slug.".zip", ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+// Create recursive directory iterator
+/** @var SplFileInfo[] $files */
+$files = new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator($rootPath),
+    RecursiveIteratorIterator::LEAVES_ONLY
+);
+
+foreach ($files as $name => $file)
+{
+    // Skip directories (they would be added automatically)
+    if (!$file->isDir())
+    {
+        // Get real and relative path for current file
+        $filePath = $file->getRealPath();
+        $relativePath = substr($filePath, strlen($rootPath) + 1);
+
+        // Add current file to archive
+        $zip->addFile($filePath, $relativePath);
+    }
+}
+
+// Zip archive will be created only after closing object
+$zip->close();
         }
 
     if (mysqli_connect_errno()){
@@ -223,39 +290,44 @@ require 'ex.php';
     </table>
 
     <!-- Mapped Table -->
-
-    <table border="2px" style="width:70%; text-align: center; margin: 35px">
-        <thead><tr><th colspan="4" style="font-size:145%;font-weight: bold">Mapped Contents</th></tr></thead>
-        <tr style="font-size:125%;font-weight: bold">
-            <td>ID</td><td>Title</td><td>Initials</td><td>Process</td>
-        </tr>
-<?php
-
-    $query1 = "SELECT wp_h5p_contents.id, wp_h5p_contents.title, wp_h5p_contents.slug FROM `wp_h5p_contents`
-    INNER JOIN c_map ON wp_h5p_contents.id=c_map.wp_cont_id";
-    //$query = "SELECT id, title, slug FROM `wp_h5p_contents` WHERE id NOT IN (SELECT wp_cont_id FROM c_map)";
-    $result = mysqli_query($con,$query1);
-    if(mysqli_num_rows($result)==0){
-        echo '<tr><td colspan="6">No contents yet</td></tr>';
-    }
-    else{
-        while($row = mysqli_fetch_assoc($result)){
-            ?>
-            <form action="" method="POST">
-            <?php
-            echo "<tr><td>{$row['id']}</td><td>{$row['title']}</td><td>{$row['slug']}</td>
-            <input type='hidden' name='id' value='".$row['id']."'>
+    <?php
+    $cou = mysqli_query($con,"SELECT COUNT(crs_id) FROM `course`");
+    $cou = mysqli_fetch_array($cou);
+    $chp = mysqli_query($con,"SELECT COUNT(chp_id) FROM `chapter`");
+    $chp = mysqli_fetch_array($chp);
+    //$first = mysqli_fetch_array(mysqli_query($con,"SELECT course.crs_name FROM course INNER JOIN c_map ON course.crs_id=c_map.crs_id"));
+    $first = mysqli_fetch_all(mysqli_query($con,"SELECT * FROM `course`"),MYSQLI_ASSOC);
+    for($i=1;$i<=$cou[0];$i++){
+        if(mysqli_num_rows(mysqli_query($con,"SELECT crs_id FROM c_map WHERE crs_id=$i")) != 0){
+        ?>
+        <table border="2px" style="width:70%; text-align: center; margin: 35px">
+        <form action="" method="POST">
+        <?php
+        echo "<tr><td style='font-size:125%;font-weight: bold'>".$first[$i-1]['crs_name']."</td></tr>";
+        echo "<tr style='font-size:125%;font-weight: bold'>
+        <td>Title</td><td>Course</td><td>Chapter</td><td>Process</td><td>Download</td>
+    </tr>";
+        for($j=1;$j<=$chp[0];$j++){
+            $temp = mysqli_query($con,"SELECT wp_h5p_contents.id,wp_h5p_contents.title, wp_h5p_contents.slug, course.crs_name, 
+            chapter.chp_name FROM c_map,wp_h5p_contents,course,chapter WHERE wp_h5p_contents.id=c_map.wp_cont_id
+            AND course.crs_id=c_map.crs_id AND chapter.chp_id=c_map.chp_id AND c_map.crs_id=$i AND c_map.chp_id=$j");
+            while($row = mysqli_fetch_assoc($temp)){
+                $down = "../wp-content/plugins/wp-stand/admin/partials/h5p/workspace/".$row['id']."-".$row['slug'].
+            "/".$row['id']."-".$row['slug'].".zip";
+                echo "<tr><td>{$row['title']}</td><td>
+                {$row['crs_name']}</td><td>{$row['chp_name']}</td>
+                <input type='hidden' name='id' value='".$row['id']."'>
             <input type='hidden' name='slug' value='".$row['slug']."'>
-            <td><input type='submit' name='submit_process' value='Process'></td>";
-            ?>
-            </form>
-            <?php
+            <td><input type='submit' name='submit_process' value='Process'></td></form>
+            <td><a href='{$down}' download>
+            <input type='button' value='Zip Download'>
+            </a></td></tr>";        
+            } 
         }
+        echo "</table>";
     }
-?>
-
-    </table>
-    
+    }
+    ?>
     <script>
     var modal = document.getElementById("myModal");
 

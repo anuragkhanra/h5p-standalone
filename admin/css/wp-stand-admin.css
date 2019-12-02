@@ -56,3 +56,10 @@
    margin: 8px 500px;
    border-radius: 10px;
  }
+ #but1{
+  color: #fff;
+  background-color: #007cba;
+  padding: 14px 50px;
+  margin-left: 15px;
+  border-radius: 10px;
+}
